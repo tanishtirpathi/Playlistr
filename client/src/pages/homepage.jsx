@@ -15,7 +15,7 @@ function HomePage() {
           isDark ? "border-white/9 bg-black/60" : "border-black/5 bg-white/70"
         }`}
       >
-        <h1 className="text-5xl md:text-6xl font-semibold tracking-tight mb-5 text-center">
+        <h1 className="text-5xl md:text-6xl instrument-serif-regular-italic tracking-tight mb-5 text-center">
           Playlistr
         </h1>
 
@@ -24,7 +24,7 @@ function HomePage() {
             isDark ? "text-gray-400" : "text-gray-600"
           }`}
         >
-            <span> Discover and explore Spotify playlists curated by real people, not
+            <span> Discover and explore <span className="instrument-serif-regular-italic text-[#13a25d]">Spotify </span> playlist scurated by real people, not
           algorithms.</span>
         </p>
 

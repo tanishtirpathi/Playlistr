@@ -36,7 +36,7 @@ export default function Navbar() {
 				{/* Logo */}
 				<Link
 					to="/"
-					className="text-xl font-semibold tracking-tight hover:opacity-80 transition"
+					className="text-xl instrument-serif-regular-italic tracking-tight hover:opacity-80 transition"
 				>
 					Playlistr
 				</Link>
@@ -45,27 +45,6 @@ export default function Navbar() {
 				<div className="flex items-center gap-8 text-sm font-medium">
 					{user ? (
 						<>
-							<Link
-								to="/"
-								className="hover:opacity-70 transition"
-							>
-								Dashboard
-							</Link>
-
-							<Link
-								to="/create-playlist"
-								className="hover:opacity-70 transition"
-							>
-								Create
-							</Link>
-
-							<Link
-								to="/top-playlists"
-								className="hover:opacity-70 transition"
-							>
-								Trending
-							</Link>
-
 							<span className="text-gray-400">
 								{user.name}
 							</span>
