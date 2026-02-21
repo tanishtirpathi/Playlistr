@@ -32,6 +32,14 @@ const playlistSchema = new mongoose.Schema({
 		trim: true,
 		maxlength: 300,
 	},
+    like:{
+        type: Number,
+        default: 0,
+    },
+    dislike:{
+        type: Number,
+        default: 0,
+    }
 });
 
 const Playlist = mongoose.model("Playlist", playlistSchema);

@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./db/db.js";
 import userRoutes from "./routes/user.routes.js";
+import playlistRoutes from "./routes/playlist.routes.js";
 dotenv.config();
 
 const app = express();
@@ -31,6 +32,7 @@ app.get("/", (req, res) => {
   });
 });
 app.use("/api/users", userRoutes);
+app.use("/api/playlists", playlistRoutes);
 //other routes
 app.use((req, res) => {
   res.status(404).json({
