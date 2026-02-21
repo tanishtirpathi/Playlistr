@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 import connectDB from "./db/db.js";
 import userRoutes from "./routes/user.routes.js";
 import playlistRoutes from "./routes/playlist.routes.js";
@@ -18,6 +19,7 @@ app.use(
 //useless work
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 connectDB(); //database connection;
 //healthCheck route

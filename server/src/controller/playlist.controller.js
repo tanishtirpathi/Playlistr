@@ -5,31 +5,30 @@ import { ApiResponse } from "../config/ApiResp.js";
 import { AsyncHandler } from "../config/Asynchandler.js";
 
 export const createPlaylist = AsyncHandler(async (req, res) => {
-	const { title, spotifyId, description, tags, ownerId } = req.body;
+	const { title, spotifyId, description, tags } = req.body;
 
-	if (!title || !ownerId) {
-		throw new ApiError(400, "title and ownerId are required");
+	if (!title) {
+		throw new ApiError(400, "title is required");
 	}
 
-	 const owner = await User.findById(ownerId);
-	// if (!owner) {
-	// 	throw new ApiError(404, "Owner user not found");
-	// }
+	if (!req.user) {
+		throw new ApiError(401, "User not authenticated");
+	}
 
 	const playlist = await Playlist.create({
 		title,
 		spotifyId,
 		description,
 		tags: tags || [],
-		owner: ownerId,
+		owner: req.user._id,
 	});
 
 	if (!playlist) {
 		throw new ApiError(500, "Failed to create playlist");
 	}
 
-	owner.playlistsUploadedCount += 1;
-	await owner.save({ validateBeforeSave: false });
+	req.user.playlistsUploadedCount += 1;
+	await req.user.save({ validateBeforeSave: false });
 
 	const populatedPlaylist = await Playlist.findById(playlist._id).populate(
 		"owner",
@@ -45,14 +44,13 @@ export const createPlaylist = AsyncHandler(async (req, res) => {
 
 export const deletePlaylist = AsyncHandler(async (req, res) => {
 	const { playlistId } = req.params;
-	const { ownerId } = req.body;
 
 	if (!playlistId) {
 		throw new ApiError(400, "playlistId is required");
 	}
 
-	if (!ownerId) {
-		throw new ApiError(400, "ownerId is required");
+	if (!req.user) {
+		throw new ApiError(401, "User not authenticated");
 	}
 
 	const playlist = await Playlist.findById(playlistId);
@@ -60,16 +58,15 @@ export const deletePlaylist = AsyncHandler(async (req, res) => {
 		throw new ApiError(404, "Playlist not found");
 	}
 
-	if (playlist.owner.toString() !== ownerId) {
+	if (playlist.owner.toString() !== req.user._id.toString()) {
 		throw new ApiError(403, "You are not authorized to delete this playlist");
 	}
 
 	await Playlist.findByIdAndDelete(playlistId);
 
-	const owner = await User.findById(ownerId);
-	if (owner && owner.playlistsUploadedCount > 0) {
-		owner.playlistsUploadedCount -= 1;
-		await owner.save({ validateBeforeSave: false });
+	if (req.user.playlistsUploadedCount > 0) {
+		req.user.playlistsUploadedCount -= 1;
+		await req.user.save({ validateBeforeSave: false });
 	}
 
 	return res
