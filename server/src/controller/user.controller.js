@@ -4,6 +4,13 @@ import { ApiError } from "../config/ApiError.js";
 import { ApiResponse } from "../config/ApiResp.js";
 import { AsyncHandler } from "../config/Asynchandler.js";
 
+const cookieOptions = {
+	httpOnly: true,
+	secure: process.env.NODE_ENV === "production",
+	sameSite: "strict",
+	maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 const sanitizeUser = (user) => ({
 	id: user._id,
 	name: user.name,
@@ -13,7 +20,7 @@ const sanitizeUser = (user) => ({
 	playlistsUploadedCount: user.playlistsUploadedCount,
 });
 
-export const registerUser = AsyncHandler(async (req, res , next) => {
+export const registerUser = AsyncHandler(async (req, res) => {
 	const { name, email, password } = req.body;
 
 	if (!name || !email || !password) {
@@ -39,13 +46,17 @@ export const registerUser = AsyncHandler(async (req, res , next) => {
 	user.refreshToken = refreshToken;
 	await user.save();
 
-	return res.status(201).json(
-		new ApiResponse(201, "User registered successfully", {
-			user: sanitizeUser(user),
-			accessToken,
-			refreshToken,
-		}),
-	);
+	return res
+		.status(201)
+		.cookie("accessToken", accessToken, cookieOptions)
+		.cookie("refreshToken", refreshToken, cookieOptions)
+		.json(
+			new ApiResponse(201, "User registered successfully", {
+				user: sanitizeUser(user),
+				accessToken,
+				refreshToken,
+			}),
+		);
 });
 
 export const loginUser = AsyncHandler(async (req, res) => {
@@ -73,13 +84,17 @@ export const loginUser = AsyncHandler(async (req, res) => {
 	user.refreshToken = refreshToken;
 	await user.save({ validateBeforeSave: false });
 
-	return res.status(200).json(
-		new ApiResponse(200, "Login successful", {
-			user: sanitizeUser(user),
-			accessToken,
-			refreshToken,
-		}),
-	);
+	return res
+		.status(200)
+		.cookie("accessToken", accessToken, cookieOptions)
+		.cookie("refreshToken", refreshToken, cookieOptions)
+		.json(
+			new ApiResponse(200, "Login successful", {
+				user: sanitizeUser(user),
+				accessToken,
+				refreshToken,
+			}),
+		);
 });
 
 export const refreshAccessToken = AsyncHandler(async (req, res) => {
@@ -110,12 +125,16 @@ export const refreshAccessToken = AsyncHandler(async (req, res) => {
 	user.refreshToken = newRefreshToken;
 	await user.save({ validateBeforeSave: false });
 
-	return res.status(200).json(
-		new ApiResponse(200, "Token refreshed", {
-			accessToken: newAccessToken,
-			refreshToken: newRefreshToken,
-		}),
-	);
+	return res
+		.status(200)
+		.cookie("accessToken", newAccessToken, cookieOptions)
+		.cookie("refreshToken", newRefreshToken, cookieOptions)
+		.json(
+			new ApiResponse(200, "Token refreshed", {
+				accessToken: newAccessToken,
+				refreshToken: newRefreshToken,
+			}),
+		);
 });
 
 export const logoutUser = AsyncHandler(async (req, res) => {
@@ -129,7 +148,11 @@ export const logoutUser = AsyncHandler(async (req, res) => {
 		"+refreshToken",
 	);
 	if (!user) {
-		return res.status(200).json(new ApiResponse(200, "Already logged out", null));
+		return res
+			.status(200)
+			.clearCookie("accessToken", cookieOptions)
+			.clearCookie("refreshToken", cookieOptions)
+			.json(new ApiResponse(200, "Already logged out", null));
 	}
 
 	user.refreshToken = null;
@@ -137,5 +160,7 @@ export const logoutUser = AsyncHandler(async (req, res) => {
 
 	return res
 		.status(200)
+		.clearCookie("accessToken", cookieOptions)
+		.clearCookie("refreshToken", cookieOptions)
 		.json(new ApiResponse(200, "Logout successful", null));
 });
