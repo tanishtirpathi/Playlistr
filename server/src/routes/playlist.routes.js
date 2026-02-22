@@ -9,6 +9,7 @@ import {
 	likePlaylist,
 	dislikePlaylist,
 	getPlaylistById,
+	fetchSpotifyPlaylists
 } from "../controller/playlist.controller.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
 
@@ -23,5 +24,6 @@ router.post("/:playlistId/add-song", verifyJWT, addSongToPlaylist);
 router.delete("/:playlistId/remove-song/:songId", verifyJWT, removeSongFromPlaylist);
 router.post("/:playlistId/like", verifyJWT, likePlaylist);
 router.post("/:playlistId/dislike", verifyJWT, dislikePlaylist);
+router.post("/fetch-playlists", verifyJWT, fetchSpotifyPlaylists);
 
 export default router;

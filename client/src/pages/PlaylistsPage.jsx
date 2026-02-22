@@ -41,6 +41,46 @@ export default function PlaylistsPage() {
     }
   };
 
+  const handleLike = async (playlistId) => {
+    try {
+      const response = await playlistAPI.likePlaylist(playlistId);
+      if (response.data.success) {
+        // Update the playlist in the list
+        setPlaylists((prev) =>
+          prev.map((p) =>
+            p._id === playlistId ? response.data.data : p
+          )
+        );
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to like playlist");
+    }
+  };
+
+  const handleDislike = async (playlistId) => {
+    try {
+      const response = await playlistAPI.dislikePlaylist(playlistId);
+      if (response.data.success) {
+        // Update the playlist in the list
+        setPlaylists((prev) =>
+          prev.map((p) =>
+            p._id === playlistId ? response.data.data : p
+          )
+        );
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to dislike playlist");
+    }
+  };
+
+  const hasUserLiked = (playlist) => {
+    return playlist.likedBy?.includes(user?.id);
+  };
+
+  const hasUserDisliked = (playlist) => {
+    return playlist.dislikedBy?.includes(user?.id);
+  };
+
   return (
     <div
       className={`min-h-screen p-8 transition-colors ${isDark ? "bg-gradient-to-br from-black via-gray-900 to-purple-900" : "bg-gradient-to-br from-purple-100 via-white to-blue-100"}`}
@@ -50,14 +90,14 @@ export default function PlaylistsPage() {
           <h1
             className={`text-4xl font-bold ${isDark ? "text-white" : "text-gray-800"}`}
           >
-            My Playlists
+            All Playlists
           </h1>
           <Link
             to="/create-playlist"
             className={`px-6 py-2 rounded-lg font-semibold transition ${isDark ? "bg-purple-600 text-white hover:bg-purple-700" : "bg-purple-600 text-white hover:bg-purple-700"}`}
-            Create
-            Playlist
-          />
+          >
+            Create Playlist
+          </Link>
         </div>
         {error && (
           <div
@@ -112,7 +152,7 @@ export default function PlaylistsPage() {
                     {playlist.description}
                   </p>
                 )}
-                <div className="flex gap-2 mb-3">
+                <div className="flex gap-2 mb-3 flex-wrap">
                   {playlist.tags?.map((tag) => (
                     <span
                       key={tag}
@@ -123,10 +163,45 @@ export default function PlaylistsPage() {
                   ))}
                 </div>
                 <p
-                  className={`text-sm mb-4 ${isDark ? "text-gray-400" : "text-gray-500"}`}
+                  className={`text-sm mb-2 ${isDark ? "text-gray-400" : "text-gray-500"}`}
                 >
-                  Likes: {playlist.like || 0}
+                  🎵 Songs: {playlist.songs?.length || 0}
                 </p>
+
+                {/* Like/Dislike buttons */}
+                <div className="flex gap-2 mb-4">
+                  <button
+                    onClick={() => handleLike(playlist._id)}
+                    className={`flex-1 py-2 rounded transition font-semibold flex items-center justify-center gap-1 ${
+                      hasUserLiked(playlist)
+                        ? isDark
+                          ? "bg-purple-600 text-white"
+                          : "bg-purple-600 text-white"
+                        : isDark
+                        ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    <span>👍</span>
+                    <span>{playlist.like || 0}</span>
+                  </button>
+                  <button
+                    onClick={() => handleDislike(playlist._id)}
+                    className={`flex-1 py-2 rounded transition font-semibold flex items-center justify-center gap-1 ${
+                      hasUserDisliked(playlist)
+                        ? isDark
+                          ? "bg-red-600 text-white"
+                          : "bg-red-600 text-white"
+                        : isDark
+                        ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    <span>👎</span>
+                    <span>{playlist.dislike || 0}</span>
+                  </button>
+                </div>
+
                 {user?.id === playlist.owner?._id && (
                   <button
                     onClick={() => handleDelete(playlist._id)}
@@ -137,6 +212,38 @@ export default function PlaylistsPage() {
                 )}
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {playlists.length > 0 && (
+          <div className="flex gap-4 justify-center mt-8">
+            <button
+              onClick={() => setPage((p) => Math.max(p - 1, 1))}
+              disabled={page === 1}
+              className={`px-4 py-2 rounded font-semibold transition disabled:opacity-50 ${
+                isDark
+                  ? "bg-purple-600 text-white hover:bg-purple-700"
+                  : "bg-purple-600 text-white hover:bg-purple-700"
+              }`}
+            >
+              Previous
+            </button>
+            <span
+              className={`py-2 px-4 ${isDark ? "text-white" : "text-gray-800"}`}
+            >
+              Page {page}
+            </span>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              className={`px-4 py-2 rounded font-semibold transition ${
+                isDark
+                  ? "bg-purple-600 text-white hover:bg-purple-700"
+                  : "bg-purple-600 text-white hover:bg-purple-700"
+              }`}
+            >
+              Next
+            </button>
           </div>
         )}
       </div>
