@@ -2,6 +2,29 @@ import mongoose from "mongoose";
 
 const allowedTags = ["pop", "rock", "hiphop", "jazz", "chill", "workout"];
 
+const songSchema = new mongoose.Schema({
+	spotifyId: {
+		type: String,
+		required: true,
+	},
+	name: {
+		type: String,
+		required: true,
+	},
+	artist: {
+		type: String,
+		required: true,
+	},
+	album: String,
+	duration: Number,
+	previewUrl: String,
+	albumArt: String,
+	addedAt: {
+		type: Date,
+		default: Date.now,
+	},
+});
+
 const playlistSchema = new mongoose.Schema({
 	title: {
 		type: String,
@@ -32,14 +55,30 @@ const playlistSchema = new mongoose.Schema({
 		trim: true,
 		maxlength: 300,
 	},
-    like:{
-        type: Number,
-        default: 0,
-    },
-    dislike:{
-        type: Number,
-        default: 0,
-    }
+	songs: {
+		type: [songSchema],
+		default: [],
+	},
+	like: {
+		type: Number,
+		default: 0,
+	},
+	dislike: {
+		type: Number,
+		default: 0,
+	},
+	likedBy: [{
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "User",
+	}],
+	dislikedBy: [{
+		type: mongoose.Schema.Types.ObjectId,
+		ref: "User",
+	}],
+	isPublic: {
+		type: Boolean,
+		default: true,
+	},
 });
 
 const Playlist = mongoose.model("Playlist", playlistSchema);

@@ -125,3 +125,186 @@ export const getTopPlaylists = AsyncHandler(async (req, res) => {
 		}),
 	);
 });
+
+export const addSongToPlaylist = AsyncHandler(async (req, res) => {
+	const { playlistId } = req.params;
+	const { spotifyId, name, artist, album, duration, previewUrl, albumArt } = req.body;
+
+	if (!playlistId || !spotifyId || !name || !artist) {
+		throw new ApiError(400, "playlistId, spotifyId, name, and artist are required");
+	}
+
+	if (!req.user) {
+		throw new ApiError(401, "User not authenticated");
+	}
+
+	const playlist = await Playlist.findById(playlistId);
+	if (!playlist) {
+		throw new ApiError(404, "Playlist not found");
+	}
+
+	if (playlist.owner.toString() !== req.user._id.toString()) {
+		throw new ApiError(403, "You are not authorized to modify this playlist");
+	}
+
+	// Check if song already exists in playlist
+	const songExists = playlist.songs.some(song => song.spotifyId === spotifyId);
+	if (songExists) {
+		throw new ApiError(400, "Song already exists in playlist");
+	}
+
+	playlist.songs.push({
+		spotifyId,
+		name,
+		artist,
+		album,
+		duration,
+		previewUrl,
+		albumArt,
+	});
+
+	await playlist.save();
+
+	const updatedPlaylist = await Playlist.findById(playlistId).populate("owner", "name email");
+
+	return res.status(200).json(
+		new ApiResponse(200, "Song added to playlist successfully", updatedPlaylist),
+	);
+});
+
+export const removeSongFromPlaylist = AsyncHandler(async (req, res) => {
+	const { playlistId, songId } = req.params;
+
+	if (!playlistId || !songId) {
+		throw new ApiError(400, "playlistId and songId are required");
+	}
+
+	if (!req.user) {
+		throw new ApiError(401, "User not authenticated");
+	}
+
+	const playlist = await Playlist.findById(playlistId);
+	if (!playlist) {
+		throw new ApiError(404, "Playlist not found");
+	}
+
+	if (playlist.owner.toString() !== req.user._id.toString()) {
+		throw new ApiError(403, "You are not authorized to modify this playlist");
+	}
+
+	playlist.songs = playlist.songs.filter(song => song._id.toString() !== songId);
+	await playlist.save();
+
+	const updatedPlaylist = await Playlist.findById(playlistId).populate("owner", "name email");
+
+	return res.status(200).json(
+		new ApiResponse(200, "Song removed from playlist successfully", updatedPlaylist),
+	);
+});
+
+export const likePlaylist = AsyncHandler(async (req, res) => {
+	const { playlistId } = req.params;
+
+	if (!playlistId) {
+		throw new ApiError(400, "playlistId is required");
+	}
+
+	if (!req.user) {
+		throw new ApiError(401, "User not authenticated");
+	}
+
+	const playlist = await Playlist.findById(playlistId);
+	if (!playlist) {
+		throw new ApiError(404, "Playlist not found");
+	}
+
+	const userId = req.user._id;
+	const hasLiked = playlist.likedBy.includes(userId);
+	const hasDisliked = playlist.dislikedBy.includes(userId);
+
+	if (hasLiked) {
+		// Unlike
+		playlist.likedBy = playlist.likedBy.filter(id => id.toString() !== userId.toString());
+		playlist.like = Math.max(0, playlist.like - 1);
+	} else {
+		// Like
+		playlist.likedBy.push(userId);
+		playlist.like += 1;
+
+		// Remove dislike if exists
+		if (hasDisliked) {
+			playlist.dislikedBy = playlist.dislikedBy.filter(id => id.toString() !== userId.toString());
+			playlist.dislike = Math.max(0, playlist.dislike - 1);
+		}
+	}
+
+	await playlist.save();
+
+	const updatedPlaylist = await Playlist.findById(playlistId).populate("owner", "name email");
+
+	return res.status(200).json(
+		new ApiResponse(200, hasLiked ? "Playlist unliked" : "Playlist liked", updatedPlaylist),
+	);
+});
+
+export const dislikePlaylist = AsyncHandler(async (req, res) => {
+	const { playlistId } = req.params;
+
+	if (!playlistId) {
+		throw new ApiError(400, "playlistId is required");
+	}
+
+	if (!req.user) {
+		throw new ApiError(401, "User not authenticated");
+	}
+
+	const playlist = await Playlist.findById(playlistId);
+	if (!playlist) {
+		throw new ApiError(404, "Playlist not found");
+	}
+
+	const userId = req.user._id;
+	const hasLiked = playlist.likedBy.includes(userId);
+	const hasDisliked = playlist.dislikedBy.includes(userId);
+
+	if (hasDisliked) {
+		// Remove dislike
+		playlist.dislikedBy = playlist.dislikedBy.filter(id => id.toString() !== userId.toString());
+		playlist.dislike = Math.max(0, playlist.dislike - 1);
+	} else {
+		// Dislike
+		playlist.dislikedBy.push(userId);
+		playlist.dislike += 1;
+
+		// Remove like if exists
+		if (hasLiked) {
+			playlist.likedBy = playlist.likedBy.filter(id => id.toString() !== userId.toString());
+			playlist.like = Math.max(0, playlist.like - 1);
+		}
+	}
+
+	await playlist.save();
+
+	const updatedPlaylist = await Playlist.findById(playlistId).populate("owner", "name email");
+
+	return res.status(200).json(
+		new ApiResponse(200, hasDisliked ? "Dislike removed" : "Playlist disliked", updatedPlaylist),
+	);
+});
+
+export const getPlaylistById = AsyncHandler(async (req, res) => {
+	const { playlistId } = req.params;
+
+	if (!playlistId) {
+		throw new ApiError(400, "playlistId is required");
+	}
+
+	const playlist = await Playlist.findById(playlistId).populate("owner", "name email");
+	if (!playlist) {
+		throw new ApiError(404, "Playlist not found");
+	}
+
+	return res.status(200).json(
+		new ApiResponse(200, "Playlist fetched successfully", playlist),
+	);
+});
