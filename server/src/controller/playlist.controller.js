@@ -393,3 +393,126 @@ export const fetchSpotifyPlaylists = AsyncHandler(async (req, res) => {
 
   res.json(response.data);
 });
+
+export const searchSpotifyTracks = AsyncHandler(async (req, res) => {
+  const { query } = req.query;
+  
+  if (!query) {
+    throw new ApiError(400, "Search query is required");
+  }
+
+  const token = await getSpotifyToken();
+  if (!token) {
+    throw new ApiError(500, "Failed to get Spotify access token");
+  }
+
+  const response = await axios.get(
+    "https://api.spotify.com/v1/search",
+    {
+      params: {
+        q: query,
+        type: "track",
+        limit: 20,
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  // Transform Spotify track data to our format
+  const tracks = response.data.tracks.items.map((track) => ({
+    id: track.id,
+    name: track.name,
+    artist: track.artists.map((a) => a.name).join(", "),
+    album: track.album.name,
+    duration: track.duration_ms,
+    previewUrl: track.preview_url,
+    albumArt: track.album.images[0]?.url || "",
+  }));
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, "Tracks fetched successfully", tracks));
+});
+
+export const importSpotifyPlaylist = AsyncHandler(async (req, res) => {
+  const { playlistUrl } = req.body;
+
+  if (!playlistUrl) {
+    throw new ApiError(400, "playlistUrl is required");
+  }
+
+  if (!req.user) {
+    throw new ApiError(401, "User not authenticated");
+  }
+
+  const playlistId = playlistUrl.split("/playlist/")[1].split("?")[0];
+  if (!playlistId) {
+    throw new ApiError(400, "Invalid Spotify playlist URL");
+  }
+
+  const token = await getSpotifyToken();
+  console.log(token)
+  if (!token) {
+    throw new ApiError(500, "Failed to get Spotify access token");
+  }
+
+  // Fetch playlist from Spotify
+try {
+  const response = await axios.get(
+    `https://api.spotify.com/v1/playlists/${playlistId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+} catch (err) {
+  console.log("Spotify Error:", err.response?.data);
+  throw err;
+}
+  const spotifyPlaylist = response.data;
+
+  // Create playlist in our database
+  const playlist = await Playlist.create({
+    title: spotifyPlaylist.name,
+    spotifyId: playlistId,
+    description: spotifyPlaylist.description || "",
+    tags: [],
+    owner: req.user._id,
+    songs: spotifyPlaylist.tracks.items
+      .filter((item) => item.track)
+      .map((item) => ({
+        spotifyId: item.track.id,
+        name: item.track.name,
+        artist: item.track.artists.map((a) => a.name).join(", "),
+        album: item.track.album.name,
+        duration: item.track.duration_ms,
+        previewUrl: item.track.preview_url,
+        albumArt: item.track.album.images[0]?.url || "",
+      })),
+  });
+
+  if (!playlist) {
+    throw new ApiError(500, "Failed to create playlist");
+  }
+
+  req.user.playlistsUploadedCount += 1;
+  await req.user.save({ validateBeforeSave: false });
+
+  const populatedPlaylist = await Playlist.findById(playlist._id).populate(
+    "owner",
+    "name email",
+  );
+
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(
+        201,
+        "Playlist imported successfully",
+        populatedPlaylist,
+      ),
+    );
+});

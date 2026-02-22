@@ -17,6 +17,9 @@ export default function CreatePlaylistPage() {
 	const [songs, setSongs] = useState([]);
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
+	const [spotifyUrl, setSpotifyUrl] = useState("");
+	const [importingSpotify, setImportingSpotify] = useState(false);
+	const [showImport, setShowImport] = useState(false);
 	const navigate = useNavigate();
 	const { user } = useAuth();
 	const { isDark } = useTheme();
@@ -102,6 +105,36 @@ export default function CreatePlaylistPage() {
 		}
 	};
 
+	const handleImportSpotify = async () => {
+		if (!spotifyUrl) {
+			setError("Please enter a Spotify playlist URL");
+			return;
+		}
+
+		setImportingSpotify(true);
+		setError("");
+
+		try {
+			const response = await playlistAPI.importSpotifyPlaylist(
+				spotifyUrl,
+				// formData.tags
+			);
+			if(!response){
+				setError("Failed to import playlist. Please check the URL and try again.");
+				return;
+			}
+			console.log(response
+			)
+			if (response.data.success) {
+				navigate("/playlists");
+			}
+		} catch (err) {
+			setError(err.response?.data?.message || "Failed to import Spotify playlist");
+		} finally {
+			setImportingSpotify(false);
+		}
+	};
+
 	return (
 		<div
 			className={`min-h-screen p-8 transition-colors ${
@@ -136,6 +169,83 @@ export default function CreatePlaylistPage() {
 						</div>
 					)}
 
+				{/* Toggle between Manual and Spotify Import */}
+				<div className="flex gap-4 mb-6">
+					<button
+						type="button"
+						onClick={() => setShowImport(false)}
+						className={`flex-1 py-3 rounded-lg font-semibold transition ${
+							!showImport
+								? isDark
+									? "bg-purple-600 text-white"
+									: "bg-purple-600 text-white"
+								: isDark
+								? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+								: "bg-gray-200 text-gray-700 hover:bg-gray-300"
+						}`}
+					>
+						Manual Creation
+					</button>
+					<button
+						type="button"
+						onClick={() => setShowImport(true)}
+						className={`flex-1 py-3 rounded-lg font-semibold transition ${
+							showImport
+								? isDark
+									? "bg-purple-600 text-white"
+									: "bg-purple-600 text-white"
+								: isDark
+								? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+								: "bg-gray-200 text-gray-700 hover:bg-gray-300"
+						}`}
+					>
+						Import from Spotify
+					</button>
+				</div>
+
+				{/* Spotify Import Section */}
+				{showImport && (
+					<div className={`p-6 rounded-lg ${isDark ? "bg-gray-700" : "bg-gray-50"}`}>
+						<h2
+							className={`text-xl font-semibold mb-4 ${
+								isDark ? "text-white" : "text-gray-800"
+							}`}
+						>
+							Import Spotify Playlist
+						</h2>
+						<p className={`text-sm mb-4 ${isDark ? "text-gray-300" : "text-gray-600"}`}>
+							Paste a Spotify playlist URL to import all tracks automatically.
+						</p>
+						<div className="space-y-4">
+							<input
+								type="text"
+								placeholder="https://open.spotify.com/playlist/..."
+								value={spotifyUrl}
+								onChange={(e) => setSpotifyUrl(e.target.value)}
+								className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 transition ${
+									isDark
+										? "bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+										: "border-gray-300 bg-white text-gray-900 placeholder-gray-500"
+								}`}
+							/>
+							<button
+								type="button"
+								onClick={handleImportSpotify}
+								disabled={importingSpotify}
+								className={`w-full py-3 rounded-lg font-semibold transition disabled:opacity-50 ${
+									isDark
+										? "bg-green-600 text-white hover:bg-green-700"
+										: "bg-green-600 text-white hover:bg-green-700"
+								}`}
+							>
+								{importingSpotify ? "Importing..." : "Import Playlist"}
+							</button>
+						</div>
+					</div>
+				)}
+
+				{/* Manual Creation Form */}
+				{!showImport && (
 					<form onSubmit={handleSubmit} className="space-y-6">
 						{/* Playlist Details */}
 						<div className="space-y-4">
@@ -332,6 +442,7 @@ export default function CreatePlaylistPage() {
 							{loading ? "Creating Playlist..." : "Create Playlist"}
 						</button>
 					</form>
+				)}
 				</div>
 			</div>
 		</div>

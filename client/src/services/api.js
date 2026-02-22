@@ -29,6 +29,12 @@ export const playlistAPI = {
 		apiClient.post(`/playlists/${playlistId}/like`),
 	dislikePlaylist: (playlistId) =>
 		apiClient.post(`/playlists/${playlistId}/dislike`),
+	fetchSpotifyPlaylist: (playlistUrl) =>
+		apiClient.post("/playlists/fetch-playlists", { playlistUrl }),
+	searchSpotifyTracks: (query) =>
+		apiClient.get("/playlists/spotify/search", { params: { query } }),
+	importSpotifyPlaylist: (playlistUrl, tags) =>
+		apiClient.post("/playlists/spotify/import", { playlistUrl }),
 };
 
 // Spotify Search API (client-side only, for demo purposes)

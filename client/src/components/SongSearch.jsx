@@ -1,78 +1,12 @@
 import { useState } from "react";
 import { useTheme } from "../context/ThemeContext";
-
-// Mock song data for demo - replace with actual Spotify API in production
-const MOCK_SONGS = [
-	{
-		id: "1",
-		name: "Blinding Lights",
-		artist: "The Weeknd",
-		album: "After Hours",
-		duration: 200000,
-		albumArt: "https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36",
-	},
-	{
-		id: "2",
-		name: "Shape of You",
-		artist: "Ed Sheeran",
-		album: "÷ (Divide)",
-		duration: 233713,
-		albumArt: "https://i.scdn.co/image/ab67616d0000b273ba5db46f4b838ef6027e6f96",
-	},
-	{
-		id: "3",
-		name: "Someone Like You",
-		artist: "Adele",
-		album: "21",
-		duration: 285000,
-		albumArt: "https://i.scdn.co/image/ab67616d0000b273372eb0b6f6c0aecc26e96956",
-	},
-	{
-		id: "4",
-		name: "Bohemian Rhapsody",
-		artist: "Queen",
-		album: "A Night at the Opera",
-		duration: 354000,
-		albumArt: "https://i.scdn.co/image/ab67616d0000b2731e0e9564e1fba38c7f1c16fd",
-	},
-	{
-		id: "5",
-		name: "Levitating",
-		artist: "Dua Lipa",
-		album: "Future Nostalgia",
-		duration: 203064,
-		albumArt: "https://i.scdn.co/image/ab67616d0000b273be841ba4bc24340152e3a79a",
-	},
-	{
-		id: "6",
-		name: "Starboy",
-		artist: "The Weeknd",
-		album: "Starboy",
-		duration: 230453,
-		albumArt: "https://i.scdn.co/image/ab67616d0000b2734718e2b124f79258be7bc452",
-	},
-	{
-		id: "7",
-		name: "Thinking Out Loud",
-		artist: "Ed Sheeran",
-		album: "x",
-		duration: 281560,
-		albumArt: "https://i.scdn.co/image/ab67616d0000b273ba7fe7dd76cd4307e57dd75f",
-	},
-	{
-		id: "8",
-		name: "Rolling in the Deep",
-		artist: "Adele",
-		album: "21",
-		duration: 228000,
-		albumArt: "https://i.scdn.co/image/ab67616d0000b273372eb0b6f6c0aecc26e96956",
-	},
-];
+import { playlistAPI } from "../services/api";
 
 export default function SongSearch({ onAddSong, existingSongs = [] }) {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [searchResults, setSearchResults] = useState([]);
 	const [searching, setSearching] = useState(false);
+	const [error, setError] = useState("");
 	const { isDark } = useTheme();
 
 	const formatDuration = (ms) => {
@@ -85,30 +19,19 @@ export default function SongSearch({ onAddSong, existingSongs = [] }) {
 		if (!searchQuery.trim()) return;
 
 		setSearching(true);
+		setError("");
 
-		// Simulate API delay
-		setTimeout(() => {
-			// Filter mock songs based on search query
-			const results = MOCK_SONGS.filter(
-				(song) =>
-					song.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					song.artist.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					song.album.toLowerCase().includes(searchQuery.toLowerCase())
-			);
-
-			setSearchResults(results);
+		try {
+			const response = await playlistAPI.searchSpotifyTracks(searchQuery);
+			if (response.data.success) {
+				setSearchResults(response.data.data);
+			}
+		} catch (err) {
+			setError(err.response?.data?.message || "Failed to search tracks");
+			setSearchResults([]);
+		} finally {
 			setSearching(false);
-		}, 500);
-
-		// For real Spotify API integration:
-		// try {
-		//   const results = await spotifyAPI.searchTracks(searchQuery, accessToken);
-		//   setSearchResults(results);
-		// } catch (error) {
-		//   console.error("Search error:", error);
-		// } finally {
-		//   setSearching(false);
-		// }
+		}
 	};
 
 	const handleKeyPress = (e) => {
@@ -149,6 +72,16 @@ export default function SongSearch({ onAddSong, existingSongs = [] }) {
 				</button>
 			</div>
 
+			{error && (
+				<div
+					className={`p-3 rounded-lg ${
+						isDark ? "bg-red-900 text-red-200" : "bg-red-100 text-red-700"
+					}`}
+				>
+					{error}
+				</div>
+			)}
+
 			{searchResults.length > 0 && (
 				<div
 					className={`rounded-lg border ${
@@ -165,11 +98,13 @@ export default function SongSearch({ onAddSong, existingSongs = [] }) {
 							}`}
 						>
 							<div className="flex items-center gap-3 flex-1">
-								<img
-									src={song.albumArt}
-									alt={song.album}
-									className="w-12 h-12 rounded object-cover"
-								/>
+								{song.albumArt && (
+									<img
+										src={song.albumArt}
+										alt={song.album}
+										className="w-12 h-12 rounded object-cover"
+									/>
+								)}
 								<div className="flex-1 min-w-0">
 									<p
 										className={`font-semibold truncate ${
@@ -212,7 +147,7 @@ export default function SongSearch({ onAddSong, existingSongs = [] }) {
 				</div>
 			)}
 
-			{searchQuery && searchResults.length === 0 && !searching && (
+			{searchQuery && searchResults.length === 0 && !searching && !error && (
 				<p
 					className={`text-center py-4 ${
 						isDark ? "text-gray-400" : "text-gray-600"
