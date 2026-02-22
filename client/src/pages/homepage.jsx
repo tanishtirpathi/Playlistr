@@ -24,8 +24,14 @@ function HomePage() {
             isDark ? "text-gray-400" : "text-gray-600"
           }`}
         >
-            <span> Discover and explore <span className="instrument-serif-regular-italic text-[#13a25d]">Spotify </span> playlist scurated by real people, not
-          algorithms.</span>
+          <span>
+            {" "}
+            Discover and explore{" "}
+            <span className="instrument-serif-regular-italic text-[#13a25d]">
+              Spotify{" "}
+            </span>{" "}
+            playlist scurated by real people, not algorithms.
+          </span>
         </p>
 
         <div className="flex flex-wrap justify-center gap-4 mb-12">
@@ -65,6 +71,24 @@ function HomePage() {
             allowFullScreen
             className="w-full h-54 md:h-70"
           />
+        </div>
+
+        <div className="flex flex-col justify-center items-center mt-10 text-sm text-gray-500">
+          <span>
+            Design & Developed by
+            <a
+              href="https://tanishtirpathi.me"
+              target="_blank"
+              className={`ml-1 font-bold transition-colors  instrument-serif-regular-italic ${
+                isDark
+                  ? "text-white "
+                  : "text-black "
+              }`}
+            >
+              Tanish Tiprpathi
+            </a>
+          </span>
+          <span>© 2026. All rights reserved.</span>
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import CreatePlaylistPage from "./pages/CreatePlaylistPage";
 import TopPlaylistsPage from "./pages/TopPlaylistsPage";
+import Profile from "./pages/Profile";
 
 function AppRoutes() {
 	const { user } = useAuth();
@@ -25,6 +26,8 @@ function AppRoutes() {
 			{/* Playlist routes */}
 			<Route path="/create-playlist" element={<CreatePlaylistPage />} />
 			<Route path="/top-playlists" element={<TopPlaylistsPage />} />
+			<Route path="/Profile" element={<Profile />} />
+
 			
 			{/* Fallback */}
 			<Route path="*" element={<Navigate to="/" replace />} />
